@@ -1,28 +1,83 @@
 import pandas as pd
+import questionary
 from pathlib import Path
 
-# Path to data folder
+# --- Setup ---
 data_dir = Path("IMDB-files")
 
-# Load title.basics.tsv
-basics_path = data_dir / "title.basics.tsv"
-basics = pd.read_csv(basics_path, sep='\t', dtype=str, na_values='\\N')
-
-# Cozy mystery shows to search for
+# Cozy series to include
 cozy_titles = [
     "Midsomer Murders", "Father Brown", "Death in Paradise",
-    "Agatha Raisin", "Miss Marple", "Grantchester", "Vera", "Poirot"
+    "Shakespeare & Hathaway: Private Investigators", "McDonald & Dodds", "Miss Fisher's Murder Mysteries", "Endeavour",
+    "New Tricks", "Inspector Morse", "The Madame Blanc Mysteries","Professor T", "Shetland", "Ludwig"
 ]
 
-# Filter for cozy series
-cozy_shows = basics[
-    basics["titleType"].isin(["tvSeries", "tvMiniSeries"]) &
-    basics["primaryTitle"].isin(cozy_titles)
+# --- Load title.basics and filter series ---
+basics = pd.read_csv(data_dir / "title.basics.tsv", sep='\t', dtype=str, na_values='\\N')
+
+# All series matching the initial title list (but don't filter yet)
+all_candidates = basics[
+    basics['titleType'].isin(['tvSeries', 'tvMiniSeries']) &
+    basics['primaryTitle'].isin(cozy_titles)
+].copy()
+
+# --- Let user choose series to include ---
+choices = [
+    questionary.Choice(
+        title=f"{row['primaryTitle']} ({row['startYear']}) [{row['genres']}]", 
+        value=row['tconst']
+    )
+    for _, row in all_candidates.iterrows()
 ]
 
-# Show result
-print("Cozy mystery series found:")
-print(cozy_shows[["tconst", "primaryTitle", "startYear"]])
+selected_series_ids = questionary.checkbox(
+    "Select which cozy series to include:",
+    choices=choices
+).ask()
 
-# Optional: Save to CSV for reuse
-cozy_shows.to_csv("cozy_shows.csv", index=False)
+# Filter to selected series only
+cozy_shows = all_candidates[all_candidates['tconst'].isin(selected_series_ids)].copy()
+cozy_series_ids = cozy_shows['tconst'].tolist()
+
+print(cozy_shows)
+
+# --- Load episode mapping and filter for cozy series ---
+episodes = pd.read_csv(data_dir / "title.episode.tsv", sep='\t', dtype=str, na_values='\\N')
+cozy_episodes = episodes[episodes['parentTconst'].isin(cozy_series_ids)].copy()
+
+# --- Join to get episode titles and air years ---
+cozy_episode_details = cozy_episodes.merge(basics, on="tconst", how="left")
+cozy_episode_details = cozy_episode_details[[
+    "tconst", "parentTconst", "primaryTitle", "seasonNumber", "episodeNumber", "startYear"
+]]
+
+# --- Load ratings and join ---
+ratings = pd.read_csv(data_dir / "title.ratings.tsv", sep='\t', dtype=str, na_values='\\N')
+cozy_episode_details = cozy_episode_details.merge(ratings, on="tconst", how="left")
+
+print(cozy_episode_details.head)
+
+# --- Load actor mapping (title.principals.tsv) ---
+principals = pd.read_csv(data_dir / "title.principals.tsv", sep='\t', dtype=str, na_values='\\N')
+
+# Only keep actors (ignore producers, writers, etc.)
+actor_roles = principals[
+    (principals['tconst'].isin(cozy_episode_details['tconst'])) &
+    (principals['category'].isin(['actor', 'actress']))
+].copy()
+
+# --- Load actor names ---
+names = pd.read_csv(data_dir / "name.basics.tsv", sep='\t', dtype=str, na_values='\\N')
+cozy_actors = actor_roles.merge(names, on='nconst', how='left')
+
+print(cozy_actors.head())
+
+# --- Save all outputs ---
+cozy_shows.to_csv("out_cozy_series.csv", index=False)
+cozy_episode_details.to_csv("out_cozy_episodes.csv", index=False)
+cozy_actors.to_csv("out_cozy_actors.csv", index=False)
+
+print("✅ All done! Files written:")
+print("- out_cozy_series.csv")
+print("- out_cozy_episodes.csv")
+print("- out_cozy_actors.csv")
