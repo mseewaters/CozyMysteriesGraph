@@ -43,7 +43,7 @@ actor_list = (
 )
 
 # Sidebar actor selector
-st.sidebar.markdown("🎭 **Actors in Multiple Episodes**\nClick an actor:")
+st.sidebar.markdown("🎭 **Actors in Multiple Episodes\n with multiple character names**\n\nClick an actor:")
 actor_choice = st.sidebar.radio(
     "Click an actor:",
     actor_list.apply(lambda row: f"{row['primaryName']} ({row['nconst']})", axis=1)

@@ -1,2 +1,3 @@
 #data files
 IMDB-files/*.tsv
+.env
