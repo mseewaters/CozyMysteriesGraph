@@ -232,6 +232,19 @@ class RelationalActorDB:
     
     def load_data_from_csv(self, episodes_csv: str, actors_csv: str, series_csv: str):
         """Load data from your existing CSV files"""
+        from pathlib import Path
+        
+        # Convert to Path objects and make relative to script location if needed
+        project_root = Path(__file__).parent
+        
+        # Handle relative paths
+        if not Path(episodes_csv).is_absolute():
+            episodes_csv = project_root / episodes_csv
+        if not Path(actors_csv).is_absolute():
+            actors_csv = project_root / actors_csv
+        if not Path(series_csv).is_absolute():
+            series_csv = project_root / series_csv
+        
         conn = sqlite3.connect(self.db_path)
         
         # Load series data
@@ -268,9 +281,9 @@ def create_relational_streamlit_app():
     # Load data button
     if st.button("Load Data from CSV"):
         db.load_data_from_csv(
-            "out_cozy_episodes.csv",
-            "out_cozy_actors.csv", 
-            "out_cozy_series.csv"
+            "GraphDB-files/out_cozy_episodes.csv",
+            "GraphDB-files/out_cozy_actors.csv", 
+            "GraphDB-files/out_cozy_series.csv"
         )
         st.success("Data loaded successfully!")
     

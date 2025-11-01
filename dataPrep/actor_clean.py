@@ -2,30 +2,32 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
-output_dir = Path("GraphDB-files")
+# Set up directory paths relative to the project root
+project_root = Path(__file__).parent.parent
+output_dir = project_root / "GraphDB-files"
 
 # Load data
 @st.cache_data
 def load_data():
-    series_df = pd.read_csv(f"{output_dir}/out_cozy_series.csv")
+    series_df = pd.read_csv(output_dir / "out_cozy_series.csv")
     
     try:
         # Episodes CSV has some lines with extra empty fields - use Python engine to handle this
-        episodes_df = pd.read_csv(f"{output_dir}/out_cozy_episodes.csv", engine='python', on_bad_lines='skip')
+        episodes_df = pd.read_csv(output_dir / "out_cozy_episodes.csv", engine='python', on_bad_lines='skip')
     except pd.errors.ParserError as e:
         st.error(f"Episodes CSV parsing error: {e}")
         # Fallback: skip problematic lines
-        episodes_df = pd.read_csv(f"{output_dir}/out_cozy_episodes.csv", engine='python', on_bad_lines='skip')
+        episodes_df = pd.read_csv(output_dir / "out_cozy_episodes.csv", engine='python', on_bad_lines='skip')
         st.warning("Some episode lines were skipped due to parsing issues.")
     
     try:
         # Use Python engine which is more robust for problematic CSV files
-        actors_df = pd.read_csv(f"{output_dir}/cleaned_episode_cast.csv", engine='python', quotechar='"', skipinitialspace=True)
+        actors_df = pd.read_csv(output_dir / "cleaned_episode_cast.csv", engine='python', quotechar='"', skipinitialspace=True)
     except pd.errors.ParserError as e:
         st.error(f"Actors CSV parsing error: {e}")
         st.info("Trying alternative parsing method...")
         # Fallback: use on_bad_lines='skip' to skip problematic lines
-        actors_df = pd.read_csv(f"{output_dir}/cleaned_episode_cast.csv", engine='python', quotechar='"', skipinitialspace=True, on_bad_lines='skip')
+        actors_df = pd.read_csv(output_dir / "cleaned_episode_cast.csv", engine='python', quotechar='"', skipinitialspace=True, on_bad_lines='skip')
         st.warning("Some actor lines were skipped due to parsing issues.")
     
     return series_df, episodes_df, actors_df
@@ -115,7 +117,7 @@ if st.button("💾 Save"):
         )
         new_actors_df.loc[mask, "characters"] = r["characters"]
 
-    new_actors_df.to_csv(f"{output_dir}/cleaned_episode_cast.csv", index=False, quoting=1)
+    new_actors_df.to_csv(output_dir / "cleaned_episode_cast.csv", index=False, quoting=1)
     st.success("✅ Saved to cleaned_episode_cast.csv")
     st.cache_data.clear()  # <--- THIS IS THE FIX
     st.rerun()  # Reloads app fresh

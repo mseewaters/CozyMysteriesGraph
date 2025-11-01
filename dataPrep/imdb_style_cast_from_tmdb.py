@@ -30,7 +30,7 @@ Notes:
   • 'primaryProfession' uses TMDb known_for_department (e.g., 'Acting'); 'knownForTitles' left blank.
 Usage:
     python imdb_style_cast_from_tmdb.py --series tt0214950 --max-rps 3
-    python imdb_style_cast_from_tmdb.py --file series_ids.txt --max-rps 3 --episodes-out my_missing_episodes.csv
+    python imdb_style_cast_from_tmdb.py --file series_ids.txt --max-rps 3 --episodes-out ../GraphDB-files/my_missing_episodes.csv
 """
 import os
 import sys
@@ -121,6 +121,9 @@ def read_ids(file_path: Optional[str], series_ids: List[str]) -> List[str]:
     out, seen = [], set()
     ids = [s.strip() for s in (series_ids or []) if s.strip()]
     if file_path:
+        # Handle relative path to series_ids.txt in same directory
+        if not Path(file_path).is_absolute():
+            file_path = Path(__file__).parent / file_path
         with open(file_path, "r", encoding="utf-8") as f:
             ids += [ln.strip() for ln in f if ln.strip() and not ln.startswith("#")]
     for s in ids:
@@ -192,8 +195,9 @@ def get_person_data(client: TMDbClient, person_id: int, person_cache: Dict[int, 
 
 
 def main():
-    # Setup output directory
-    output_dir = Path("GraphDB-files")
+    # Setup output directory relative to project root
+    project_root = Path(__file__).parent.parent
+    output_dir = project_root / "GraphDB-files"
     output_dir.mkdir(exist_ok=True)
     
     ap = argparse.ArgumentParser(description="Export IMDb-style cast-to-episode rows using TMDb.")

@@ -3,8 +3,10 @@ import questionary
 from pathlib import Path
 
 # --- Setup ---
-data_dir = Path("IMDB-files")
-output_dir = Path("GraphDB-files")
+# Set up directory paths relative to the project root
+project_root = Path(__file__).parent.parent
+data_dir = project_root / "IMDB-files"
+output_dir = project_root / "GraphDB-files"
 
 # Create output directory if it doesn't exist
 output_dir.mkdir(exist_ok=True)

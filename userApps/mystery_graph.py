@@ -232,7 +232,7 @@ if not cast:
     st.stop()
 
 # Two-column layout: actors on left, results on right
-left_col, right_col = st.columns([1, 1])
+left_col, right_col = st.columns([2, 3])
 
 with left_col:
     st.markdown("### 👥 Select Actor")

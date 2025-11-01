@@ -14,7 +14,7 @@ Features:
 - Batch processing with progress tracking
 
 Usage:
-    python character_name_cleanup.py --tmdb-cast GraphDB-files/imdb_style_episode_cast.csv --imdb-cast GraphDB-files/out_cozy_actors.csv --output GraphDB-files/cleaned_episode_cast.csv
+    python character_name_cleanup.py --tmdb-cast ../GraphDB-files/imdb_style_episode_cast.csv --imdb-cast ../GraphDB-files/out_cozy_actors.csv --output ../GraphDB-files/cleaned_episode_cast.csv
 """
 
 import pandas as pd
@@ -87,7 +87,7 @@ class CharacterNameCleaner:
         
     def load_manual_mappings(self):
         """Load any existing manual character name mappings"""
-        mappings_file = Path("character_name_mappings.json")
+        mappings_file = Path(__file__).parent / "character_name_mappings.json"
         if mappings_file.exists():
             try:
                 with open(mappings_file, 'r', encoding='utf-8') as f:
@@ -98,7 +98,7 @@ class CharacterNameCleaner:
     
     def save_manual_mappings(self):
         """Save manual character name mappings for future use"""
-        mappings_file = Path("character_name_mappings.json")
+        mappings_file = Path(__file__).parent / "character_name_mappings.json"
         try:
             with open(mappings_file, 'w', encoding='utf-8') as f:
                 json.dump(self.manual_mappings, f, indent=2, ensure_ascii=False)
