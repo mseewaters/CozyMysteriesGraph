@@ -4,6 +4,10 @@ from pathlib import Path
 
 # --- Setup ---
 data_dir = Path("IMDB-files")
+output_dir = Path("GraphDB-files")
+
+# Create output directory if it doesn't exist
+output_dir.mkdir(exist_ok=True)
 
 # Cozy series to include
 cozy_titles = [
@@ -73,11 +77,12 @@ cozy_actors = actor_roles.merge(names, on='nconst', how='left')
 print(cozy_actors.head())
 
 # --- Save all outputs ---
-cozy_shows.to_csv("out_cozy_series.csv", index=False)
-cozy_episode_details.to_csv("out_cozy_episodes.csv", index=False)
-cozy_actors.to_csv("out_cozy_actors.csv", index=False)
+# Save with proper CSV quoting to handle commas in text fields
+cozy_shows.to_csv(output_dir / "out_cozy_series.csv", index=False, quoting=1)
+cozy_episode_details.to_csv(output_dir / "out_cozy_episodes.csv", index=False, quoting=1)
+cozy_actors.to_csv(output_dir / "out_cozy_actors.csv", index=False, quoting=1)
 
 print("✅ All done! Files written:")
-print("- out_cozy_series.csv")
-print("- out_cozy_episodes.csv")
-print("- out_cozy_actors.csv")
+print(f"- {output_dir}/out_cozy_series.csv")
+print(f"- {output_dir}/out_cozy_episodes.csv")
+print(f"- {output_dir}/out_cozy_actors.csv")

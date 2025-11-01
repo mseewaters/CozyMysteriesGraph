@@ -2,3 +2,8 @@
 streamlit>=1.36.0
 neo4j>=5.21.0
 python-dotenv>=1.0.1
+fuzzywuzzy>=0.18.0
+python-levenshtein>=0.12.0
+openai>=1.0.0
+pandas>=2.0.0
+questionary>=2.0.0

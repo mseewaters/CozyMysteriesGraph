@@ -2,9 +2,9 @@
   // Define the file path root and the individual file names required for loading.
   // https://neo4j.com/docs/operations-manual/current/configuration/file-locations/
   file_path_root: 'file:///', // Change this to the folder your script can access the files at.
-  file_0: 'out_cozy_episodes.csv',
-  file_1: 'out_cozy_series.csv',
-  file_2: 'out_cozy_actors.csv'
+  file_0: 'out_cozy_series.csv',
+  file_1: 'out_cozy_episodes.csv',
+  file_2: 'imdb_style_episode_cast.csv'
 };
 
 // CONSTRAINT creation
@@ -12,12 +12,12 @@
 //
 // Create node uniqueness constraints, ensuring no duplicates for the given node label and ID property exist in the database. This also ensures no duplicates are introduced in future.
 //
-// NOTE: The following constraint creation syntax is generated based on the current connected database version 5.27.0.
-CREATE CONSTRAINT `out_cozy_episodes.csv` IF NOT EXISTS
-FOR (n: `Episode`)
-REQUIRE (n.`tconst`) IS UNIQUE;
-CREATE CONSTRAINT `out_cozy_series.csv` IF NOT EXISTS
+// NOTE: The following constraint creation syntax is generated based on the current connected database version 2025.9.0.
+CREATE CONSTRAINT `tconst_Series_uniq` IF NOT EXISTS
 FOR (n: `Series`)
+REQUIRE (n.`tconst`) IS UNIQUE;
+CREATE CONSTRAINT `tconst_Episode_uniq` IF NOT EXISTS
+FOR (n: `Episode`)
 REQUIRE (n.`tconst`) IS UNIQUE;
 CREATE CONSTRAINT `nconst_Actor_uniq` IF NOT EXISTS
 FOR (n: `Actor`)
@@ -38,14 +38,10 @@ WITH row
 WHERE NOT row.`tconst` IN $idsToSkip AND NOT row.`tconst` IS NULL
 CALL {
   WITH row
-  MERGE (n: `Episode` { `tconst`: row.`tconst` })
+  MERGE (n: `Series` { `tconst`: row.`tconst` })
   SET n.`tconst` = row.`tconst`
   SET n.`primaryTitle` = row.`primaryTitle`
-  SET n.`seasonNumber` = toInteger(trim(row.`seasonNumber`))
-  SET n.`episodeNumber` = toInteger(trim(row.`episodeNumber`))
   SET n.`startYear` = toInteger(trim(row.`startYear`))
-  SET n.`averageRating` = toFloat(trim(row.`averageRating`))
-  SET n.`numVotes` = toInteger(trim(row.`numVotes`))
 } IN TRANSACTIONS OF 10000 ROWS;
 
 LOAD CSV WITH HEADERS FROM ($file_path_root + $file_1) AS row
@@ -53,12 +49,13 @@ WITH row
 WHERE NOT row.`tconst` IN $idsToSkip AND NOT row.`tconst` IS NULL
 CALL {
   WITH row
-  MERGE (n: `Series` { `tconst`: row.`tconst` })
+  MERGE (n: `Episode` { `tconst`: row.`tconst` })
   SET n.`tconst` = row.`tconst`
   SET n.`primaryTitle` = row.`primaryTitle`
+  SET n.`seasonNumber` = toInteger(trim(row.`seasonNumber`))
+  SET n.`episodeNumber` = toInteger(trim(row.`episodeNumber`))
   SET n.`startYear` = toInteger(trim(row.`startYear`))
-  SET n.`endYear` = toInteger(trim(row.`endYear`))
-  SET n.`genres` = row.`genres`
+  SET n.`averageRating` = toFloat(trim(row.`averageRating`))
 } IN TRANSACTIONS OF 10000 ROWS;
 
 LOAD CSV WITH HEADERS FROM ($file_path_root + $file_2) AS row
@@ -70,7 +67,6 @@ CALL {
   SET n.`nconst` = row.`nconst`
   SET n.`primaryName` = row.`primaryName`
   SET n.`birthYear` = toInteger(trim(row.`birthYear`))
-  SET n.`deathYear` = toInteger(trim(row.`deathYear`))
 } IN TRANSACTIONS OF 10000 ROWS;
 
 
@@ -78,7 +74,7 @@ CALL {
 // -----------------
 //
 // Load relationships in batches, one relationship type at a time. Relationships are created using a MERGE statement, meaning only one relationship of a given type will ever be created between a pair of nodes.
-LOAD CSV WITH HEADERS FROM ($file_path_root + $file_0) AS row
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_1) AS row
 WITH row 
 CALL {
   WITH row
@@ -94,5 +90,5 @@ CALL {
   MATCH (source: `Actor` { `nconst`: row.`nconst` })
   MATCH (target: `Episode` { `tconst`: row.`tconst` })
   MERGE (source)-[r: `ACTED_IN`]->(target)
-  SET r.`characters` = row.`characters`
+  SET r.`character` = row.`characters`
 } IN TRANSACTIONS OF 10000 ROWS;

@@ -1,3 +1,17 @@
-#data files
+# Data files
 IMDB-files/*.tsv
 .env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Test and demo files
+test_*.py
+demo_*.py
+
+# Temporary files
+*.tmp
+*.backup
+*_backup.*
