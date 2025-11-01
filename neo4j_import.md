@@ -2,9 +2,9 @@
   // Define the file path root and the individual file names required for loading.
   // https://neo4j.com/docs/operations-manual/current/configuration/file-locations/
   file_path_root: 'file:///', // Change this to the folder your script can access the files at.
-  file_0: 'out_cozy_series.csv',
+  file_0: 'cleaned_episode_cast.csv',
   file_1: 'out_cozy_episodes.csv',
-  file_2: 'imdb_style_episode_cast.csv'
+  file_2: 'out_cozy_series.csv'
 };
 
 // CONSTRAINT creation
@@ -33,7 +33,7 @@ REQUIRE (n.`nconst`) IS UNIQUE;
 // Load nodes in batches, one node label at a time. Nodes will be created using a MERGE statement to ensure a node with the same label and ID property remains unique. Pre-existing nodes found by a MERGE statement will have their other properties set to the latest values encountered in a load file.
 //
 // NOTE: Any nodes with IDs in the 'idsToSkip' list parameter will not be loaded.
-LOAD CSV WITH HEADERS FROM ($file_path_root + $file_0) AS row
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_2) AS row
 WITH row
 WHERE NOT row.`tconst` IN $idsToSkip AND NOT row.`tconst` IS NULL
 CALL {
@@ -58,7 +58,7 @@ CALL {
   SET n.`averageRating` = toFloat(trim(row.`averageRating`))
 } IN TRANSACTIONS OF 10000 ROWS;
 
-LOAD CSV WITH HEADERS FROM ($file_path_root + $file_2) AS row
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_0) AS row
 WITH row
 WHERE NOT row.`nconst` IN $idsToSkip AND NOT row.`nconst` IS NULL
 CALL {
@@ -83,7 +83,7 @@ CALL {
   MERGE (source)-[r: `PART_OF`]->(target)
 } IN TRANSACTIONS OF 10000 ROWS;
 
-LOAD CSV WITH HEADERS FROM ($file_path_root + $file_2) AS row
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_0) AS row
 WITH row 
 CALL {
   WITH row
@@ -91,4 +91,5 @@ CALL {
   MATCH (target: `Episode` { `tconst`: row.`tconst` })
   MERGE (source)-[r: `ACTED_IN`]->(target)
   SET r.`character` = row.`characters`
+  SET r.`castType` = row.`castType`
 } IN TRANSACTIONS OF 10000 ROWS;
