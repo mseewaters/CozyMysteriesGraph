@@ -69,17 +69,18 @@ WITH series1, series2, a, series1Episodes, series2Episodes,
      CASE 
          WHEN castType1 IS NOT NULL THEN castType1 
          ELSE castType2 
-     END AS primaryCastType,
-     series1Episodes + series2Episodes AS totalEpisodes
+     END AS primaryCastType
 
 WITH series1, series2,
      collect({
          actor: a.primaryName,
-         episodes: totalEpisodes,
+         series1Episodes: series1Episodes,
+         series2Episodes: series2Episodes,
+         totalEpisodes: series1Episodes + series2Episodes,
          castType: primaryCastType
      }) AS actorBreakdown,
      count(DISTINCT a) AS uniqueActorsCrossing,
-     sum(totalEpisodes) AS totalCrossoverEpisodes
+     sum(series1Episodes + series2Episodes) AS totalCrossoverEpisodes
 
 WHERE uniqueActorsCrossing > 0
 
@@ -175,7 +176,16 @@ def create_series_heatmap(series_list, connections, cast_type_filter="all"):
             for actor_info in conn['actorBreakdown'][:5]:  # Show top 5
                 cast_type = actor_info.get('castType', 'unknown')
                 cast_type_icon = "⭐" if cast_type == "regular" else "👥" if cast_type == "guest" else "❓"
-                actor_details.append(f"{cast_type_icon} {actor_info['actor']}: {actor_info['episodes']} eps")
+                
+                # Check if we have the new format with separate episode counts
+                if 'series1Episodes' in actor_info and 'series2Episodes' in actor_info:
+                    series1_eps = actor_info['series1Episodes']
+                    series2_eps = actor_info['series2Episodes']
+                    actor_details.append(f"{cast_type_icon} {actor_info['actor']}: {series1_eps}+{series2_eps} eps")
+                else:
+                    # Fallback to old format
+                    total_eps = actor_info.get('episodes', 0)
+                    actor_details.append(f"{cast_type_icon} {actor_info['actor']}: {total_eps} eps")
             
             if len(conn['actorBreakdown']) > 5:
                 actor_details.append("...")
@@ -246,8 +256,9 @@ def create_series_heatmap(series_list, connections, cast_type_filter="all"):
         height=800,
         xaxis={'side': 'bottom', 'tickangle': 45},
         yaxis={'side': 'left'},
-        # Improve appearance for triangular matrix
-        plot_bgcolor='white'
+        # Black background for triangular matrix
+        plot_bgcolor='black',
+        paper_bgcolor='black'
     )
     
     return fig
@@ -277,6 +288,11 @@ with st.sidebar:
             st.cache_resource.clear()
             st.cache_data.clear()
             st.rerun()
+            
+    # Add cache clear button
+    if st.button("🔄 Clear Cache & Reload", help="Clear cached data and reload from Neo4j"):
+        st.cache_data.clear()
+        st.rerun()
 
     # Get connection settings
     current_uri = st.session_state.get("uri", NEO4J_URI)
@@ -396,7 +412,16 @@ if fig:
                 for actor_info in conn['actorBreakdown']:
                     cast_type = actor_info.get('castType', 'unknown')
                     cast_type_icon = "⭐" if cast_type == "regular" else "👥" if cast_type == "guest" else "❓"
-                    st.markdown(f"- {cast_type_icon} {actor_info['actor']}: {actor_info['episodes']} episodes")
+                    
+                    # Check if we have the new format with separate episode counts
+                    if 'series1Episodes' in actor_info and 'series2Episodes' in actor_info:
+                        series1_eps = actor_info['series1Episodes']
+                        series2_eps = actor_info['series2Episodes']
+                        st.markdown(f"- {cast_type_icon} {actor_info['actor']}: {series1_eps}+{series2_eps} episodes")
+                    else:
+                        # Fallback to old format
+                        total_eps = actor_info.get('episodes', actor_info.get('totalEpisodes', 0))
+                        st.markdown(f"- {cast_type_icon} {actor_info['actor']}: {total_eps} episodes")
 else:
     st.info("Need at least 2 series to create a heatmap.")
 
